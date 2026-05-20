@@ -1,0 +1,1430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Project Requests — Fremantle Dockers</title>
+<style>
+:root {
+  color-scheme: light;
+  --purple:  #291152;
+  --glow:    #6A00FF;
+  --haze:    #ECEEEE;
+  --steel:   #A5ACAF;
+  --white:   #FFFFFF;
+  --black:   #000000;
+  --s-active:    #6A00FF;
+  --s-blocked:   #C4003A;
+  --s-notstart:  #A5ACAF;
+  --s-complete:  #291152;
+  --s-notdoing:  #4A4A4A;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: Arial, sans-serif;
+  background: var(--haze);
+  color: var(--purple);
+  min-height: 100vh;
+  font-size: 13px;
+}
+
+/* ── Header ─────────────────────────────────────── */
+.header {
+  background: var(--purple);
+  color: var(--white);
+  padding: 0;
+  display: flex;
+  align-items: stretch;
+  position: relative;
+  overflow: hidden;
+}
+.header-main {
+  padding: 16px 20px;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  position: relative;
+  z-index: 1;
+}
+/* Chevron graphic device — points right, FFC brand element */
+.header-chevron {
+  width: 120px;
+  flex-shrink: 0;
+  background: var(--glow);
+  clip-path: polygon(0 0, 70% 0, 100% 50%, 70% 100%, 0 100%, 30% 50%);
+  opacity: 0.18;
+  position: absolute;
+  right: -10px;
+  top: 0;
+  bottom: 0;
+}
+.header-chevron-2 {
+  width: 80px;
+  flex-shrink: 0;
+  background: var(--white);
+  clip-path: polygon(0 0, 70% 0, 100% 50%, 70% 100%, 0 100%, 30% 50%);
+  opacity: 0.06;
+  position: absolute;
+  right: 60px;
+  top: 0;
+  bottom: 0;
+}
+.header h1 {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+  color: var(--white);
+}
+.header-sub {
+  font-size: 11px;
+  color: var(--steel);
+  margin-top: 2px;
+}
+.header-tag {
+  margin-left: auto;
+  font-size: 10px;
+  color: rgba(255,255,255,0.45);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  padding-right: 140px;
+}
+
+/* ── Loading ─────────────────────────────────────── */
+#loading { text-align: center; padding: 80px; }
+.spinner {
+  width: 36px; height: 36px;
+  border: 3px solid var(--haze);
+  border-top-color: var(--purple);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin: 0 auto 14px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Active Requests Banner ─────────────────────── */
+.active-banner {
+  margin: 14px 16px 0;
+  background: var(--white);
+  border-radius: 8px;
+  padding: 13px 16px;
+  box-shadow: 0 1px 4px rgba(41,17,82,0.1);
+  border-left: 4px solid var(--glow);
+}
+.active-banner-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.active-banner-top h2 {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--purple);
+}
+.active-count {
+  background: var(--glow);
+  color: var(--white);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 9px;
+  border-radius: 20px;
+}
+.active-chips {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+.active-chips::-webkit-scrollbar { height: 4px; }
+.active-chips::-webkit-scrollbar-track { background: var(--haze); border-radius: 2px; }
+.active-chips::-webkit-scrollbar-thumb { background: var(--steel); border-radius: 2px; }
+.active-chip {
+  background: #f5f1ff;
+  border: 1px solid #d4b8ff;
+  border-radius: 8px;
+  padding: 10px 13px;
+  cursor: pointer;
+  transition: background 0.12s, box-shadow 0.12s;
+  flex-shrink: 0;
+  width: 240px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.active-chip:hover { background: #ede5ff; box-shadow: 0 2px 8px rgba(106,0,255,0.12); }
+.active-chip-name {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--purple);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.active-chip-owner {
+  font-size: 10.5px;
+  color: var(--glow);
+  font-weight: 600;
+}
+.active-chip-update {
+  font-size: 10.5px;
+  color: #555;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ── Main Layout ─────────────────────────────────── */
+.main-layout { display: flex; gap: 12px; padding: 12px 16px; align-items: flex-start; }
+.left-panel { width: 255px; flex-shrink: 0; display: flex; flex-direction: column; gap: 10px; }
+.right-panel { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 10px; }
+
+/* ── Cards ─────────────────────────────────────── */
+.card {
+  background: var(--white);
+  border-radius: 8px;
+  padding: 14px 15px;
+  box-shadow: 0 1px 4px rgba(41,17,82,0.09);
+}
+.card h3 {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+  color: var(--purple);
+  margin-bottom: 3px;
+}
+.chart-legend {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-size: 10px;
+  color: var(--steel);
+  margin-bottom: 8px;
+}
+.chart-legend span { display: flex; align-items: center; gap: 3px; }
+.dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+
+/* ── Filter Bar ─────────────────────────────────── */
+.filter-bar {
+  background: var(--white);
+  border-radius: 8px;
+  padding: 9px 13px;
+  box-shadow: 0 1px 4px rgba(41,17,82,0.09);
+  display: flex;
+  gap: 7px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.filter-bar select,
+.filter-bar input {
+  border: 1px solid var(--steel);
+  border-radius: 5px;
+  padding: 5px 8px;
+  font-size: 11.5px;
+  font-family: Arial, sans-serif;
+  color: var(--purple);
+  background: var(--haze);
+  outline: none;
+  transition: border-color 0.15s;
+}
+.filter-bar input { width: 145px; }
+.filter-bar select:focus, .filter-bar input:focus { border-color: var(--glow); }
+.table-meta { font-size: 11px; color: var(--steel); margin-left: auto; white-space: nowrap; }
+.clear-btn {
+  padding: 5px 10px;
+  border: 1px solid var(--steel);
+  border-radius: 5px;
+  background: var(--white);
+  font-size: 11px;
+  font-family: Arial, sans-serif;
+  color: var(--steel);
+  cursor: pointer;
+  transition: all 0.1s;
+}
+.clear-btn:hover { background: var(--haze); color: var(--purple); border-color: var(--purple); }
+
+/* ── Table ─────────────────────────────────────── */
+.table-wrap {
+  background: var(--white);
+  border-radius: 8px;
+  box-shadow: 0 1px 4px rgba(41,17,82,0.09);
+  overflow: hidden;
+  max-height: 295px; /* ~7 rows + header */
+  overflow-y: auto;
+}
+.table-wrap::-webkit-scrollbar { width: 6px; }
+.table-wrap::-webkit-scrollbar-track { background: var(--haze); }
+.table-wrap::-webkit-scrollbar-thumb { background: var(--steel); border-radius: 3px; }
+.table-wrap::-webkit-scrollbar-thumb:hover { background: var(--purple); }
+table { width: 100%; border-collapse: collapse; font-size: 12px; font-family: Arial, sans-serif; }
+thead { background: var(--purple); color: var(--white); position: sticky; top: 0; z-index: 2; }
+th {
+  padding: 10px 11px;
+  text-align: left;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  cursor: pointer;
+  white-space: nowrap;
+  user-select: none;
+  font-family: Arial, sans-serif;
+}
+th:hover { background: rgba(255,255,255,0.1); }
+th.sorted { background: rgba(255,255,255,0.08); }
+.sort-arr { opacity: 0.4; font-size: 9px; margin-left: 2px; }
+th.sorted .sort-arr { opacity: 1; }
+td { padding: 8px 11px; border-bottom: 1px solid var(--haze); vertical-align: middle; }
+tr:last-child td { border-bottom: none; }
+tr.drow { cursor: pointer; }
+tr.drow:hover td { background: #f5f2fc; }
+tr.drow.sel td { background: #ede7ff; }
+.no-res { text-align: center; padding: 40px; color: var(--steel); }
+
+/* ── Status Badges ─────────────────────────────── */
+.badge {
+  display: inline-block;
+  padding: 2px 9px;
+  border-radius: 20px;
+  font-size: 10px;
+  font-weight: 700;
+  white-space: nowrap;
+  font-family: Arial, sans-serif;
+  letter-spacing: 0.2px;
+}
+.b-Active     { background: #ede7ff; color: var(--glow); border: 1px solid #c4b0ff; }
+.b-Blocked    { background: #ffe0e8; color: #C4003A; border: 1px solid #ffb3c8; }
+.b-Complete   { background: #e8e2f5; color: var(--purple); border: 1px solid #c9b8e8; }
+.b-NotStarted { background: var(--haze); color: var(--steel); border: 1px solid #d0d4d6; }
+.b-NotDoing   { background: #f0f0f0; color: #4A4A4A; border: 1px solid #cccccc; }
+
+/* ── Priority ─────────────────────────────────── */
+.pb-High        { color: #C4003A; font-weight: 700; }
+.pb-MediumHigh  { color: #8B4A00; font-weight: 700; }
+.pb-Medium      { color: var(--purple); font-weight: 600; }
+.pb-Low         { color: var(--steel); }
+
+/* ── Score Pill ─────────────────────────────────── */
+.score-pill {
+  display: inline-block;
+  background: var(--purple);
+  color: var(--white);
+  font-weight: 700;
+  font-size: 10.5px;
+  font-family: Arial, sans-serif;
+  padding: 2px 8px;
+  border-radius: 10px;
+  min-width: 34px;
+  text-align: center;
+}
+
+/* ── Formula Box ─────────────────────────────────── */
+.formula-box {
+  background: var(--white);
+  border-radius: 8px;
+  padding: 11px 14px;
+  box-shadow: 0 1px 4px rgba(41,17,82,0.09);
+  border-left: 3px solid var(--glow);
+}
+.formula-box h3 {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+  color: var(--glow);
+  margin-bottom: 5px;
+}
+.formula-box p {
+  font-size: 11.5px;
+  color: #444;
+  line-height: 1.7;
+}
+.formula-box strong { color: var(--purple); }
+
+/* ── Gantt ─────────────────────────────────────── */
+.gantt-legend {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  font-size: 10px;
+  color: var(--steel);
+  margin-bottom: 10px;
+}
+.gantt-legend span { display: flex; align-items: center; gap: 4px; }
+.gantt-scroll { overflow-x: auto; }
+.gantt-wrap { min-width: 600px; position: relative; }
+.gantt-today {
+  position: absolute; top: 0; bottom: 0; width: 2px;
+  background: var(--glow); z-index: 5; pointer-events: none;
+}
+.gantt-today-label {
+  position: absolute; top: 62px; left: 50%;
+  transform: translateX(-50%);
+  background: var(--glow); color: white;
+  font-size: 8.5px; font-weight: 700;
+  padding: 2px 5px; border-radius: 3px;
+  white-space: nowrap; letter-spacing: 0.3px;
+}
+.gantt-header-row {
+  display: flex;
+  margin-left: 160px;
+}
+.gantt-header-row.month-row {
+  border-bottom: 2px solid var(--haze);
+  margin-bottom: 5px;
+  padding-bottom: 3px;
+}
+.gantt-year-lbl {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--purple);
+  text-align: center;
+  padding: 3px 0;
+  border-right: 1px solid var(--haze);
+  background: #f0eef8;
+  border-radius: 3px 3px 0 0;
+}
+.gantt-year-lbl:last-child { border-right: none; }
+.gantt-qtr-lbl {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--glow);
+  text-align: center;
+  padding: 2px 0;
+  border-right: 1px solid var(--haze);
+}
+.gantt-qtr-lbl:last-child { border-right: none; }
+.gantt-month-lbl {
+  font-size: 9px;
+  color: var(--steel);
+  font-weight: 600;
+  flex: 1;
+  text-align: center;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
+.gantt-group { margin-bottom: 4px; }
+.gantt-group-hdr {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 6px;
+  cursor: pointer;
+  border-radius: 5px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--purple);
+  user-select: none;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.gantt-group-hdr:hover { background: #f5f2fc; }
+.gang-toggle { font-size: 10px; width: 12px; color: var(--glow); }
+.gantt-row { display: flex; align-items: center; padding: 2px 0; border-radius: 4px; }
+.gantt-row:hover { background: #f5f2fc; }
+.gantt-lbl {
+  width: 160px;
+  flex-shrink: 0;
+  font-size: 10.5px;
+  color: #444;
+  padding-right: 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding-left: 18px;
+}
+.gantt-track { flex: 1; height: 22px; position: relative; }
+.gantt-grid-line { position: absolute; top: 0; bottom: 0; border-left: 1px solid var(--haze); }
+.gantt-bar {
+  position: absolute;
+  height: 14px;
+  top: 4px;
+  border-radius: 3px;
+  min-width: 4px;
+  opacity: 0.9;
+  cursor: pointer;
+  transition: opacity 0.1s;
+}
+.gantt-bar:hover { opacity: 1; }
+.g-Active     { background: var(--glow); }
+.g-Blocked    { background: repeating-linear-gradient(45deg,#C4003A,#C4003A 4px,#8B0020 4px,#8B0020 8px); }
+.g-NotStarted { background: #B0B7BC; }
+.g-Complete   { background: var(--purple); }
+.g-NotDoing   { background: #4A4A4A; }
+
+/* ── Detail Panel ─────────────────────────────────── */
+.overlay { display: none; position: fixed; inset: 0; background: rgba(41,17,82,0.4); z-index: 100; }
+.overlay.open { display: block; }
+.detail-panel {
+  position: fixed; top: 0; right: 0; width: 420px; height: 100vh;
+  background: var(--white);
+  box-shadow: -4px 0 30px rgba(41,17,82,0.2);
+  overflow-y: auto; z-index: 101;
+  transform: translateX(100%); transition: transform 0.22s ease;
+}
+.detail-panel.open { transform: translateX(0); }
+.dp-header {
+  background: var(--purple);
+  color: var(--white);
+  padding: 18px 20px;
+  position: sticky; top: 0; z-index: 1;
+  /* Chevron device */
+  position: relative; overflow: hidden;
+}
+.dp-chevron {
+  position: absolute; right: -15px; top: 0; bottom: 0; width: 90px;
+  background: var(--glow);
+  clip-path: polygon(0 0, 70% 0, 100% 50%, 70% 100%, 0 100%, 30% 50%);
+  opacity: 0.2;
+}
+.dp-header h2 {
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.35;
+  margin-bottom: 8px;
+  padding-right: 36px;
+  position: relative; z-index: 1;
+}
+.dp-close {
+  position: absolute; top: 14px; right: 14px;
+  width: 28px; height: 28px; border: none;
+  background: rgba(255,255,255,0.15); color: var(--white);
+  border-radius: 5px; font-size: 15px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; line-height: 1;
+  z-index: 1; font-family: Arial, sans-serif;
+}
+.dp-close:hover { background: rgba(255,255,255,0.25); }
+.dp-badges { display: flex; gap: 6px; flex-wrap: wrap; position: relative; z-index: 1; }
+.dp-body { padding: 16px 20px; }
+.dp-section { margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px solid var(--haze); }
+.dp-section:last-child { border-bottom: none; margin-bottom: 0; }
+.dp-section h4 {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+  color: var(--steel);
+  margin-bottom: 10px;
+}
+.dp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.dp-field label {
+  display: block;
+  font-size: 9.5px;
+  color: var(--steel);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 2px;
+}
+.dp-field span { font-size: 12.5px; color: var(--purple); font-weight: 600; }
+.dp-text {
+  font-size: 12px;
+  color: #444;
+  line-height: 1.65;
+  white-space: pre-wrap;
+  max-height: 150px;
+  overflow-y: auto;
+  background: var(--haze);
+  border-radius: 5px;
+  padding: 8px 10px;
+  font-family: Arial, sans-serif;
+}
+/* ── Edit mode ────────────────────────────────── */
+.btn-edit-dp {
+  position: absolute; top: 14px; right: 50px; z-index: 1;
+  background: rgba(255,255,255,0.15); color: white;
+  border: 1px solid rgba(255,255,255,0.3); border-radius: 5px;
+  padding: 4px 10px; font-size: 11px; font-family: Arial, sans-serif; cursor: pointer;
+}
+.btn-edit-dp:hover { background: rgba(255,255,255,0.25); }
+.dp-form-input, .dp-form-select {
+  width: 100%; border: 1px solid #d8d0ee; border-radius: 5px;
+  padding: 6px 8px; font-family: Arial, sans-serif; font-size: 12px;
+  color: var(--purple); background: white; outline: none; margin-top: 2px;
+}
+.dp-form-input:focus, .dp-form-select:focus { border-color: var(--glow); }
+.dp-form-textarea {
+  width: 100%; border: 1px solid #d8d0ee; border-radius: 5px;
+  padding: 6px 8px; font-family: Arial, sans-serif; font-size: 12px;
+  color: var(--purple); background: white; outline: none; resize: vertical;
+  min-height: 72px; margin-top: 2px;
+}
+.dp-form-textarea:focus { border-color: var(--glow); }
+.btn-sp-save {
+  background: var(--glow); color: white; border: none; border-radius: 5px;
+  padding: 8px 18px; font-family: Arial, sans-serif; font-size: 12px;
+  font-weight: 700; cursor: pointer;
+}
+.btn-sp-save:hover { background: #5500cc; }
+.btn-sp-save:disabled { opacity: 0.6; cursor: not-allowed; }
+.btn-sp-cancel {
+  background: white; color: var(--steel); border: 1px solid var(--steel);
+  border-radius: 5px; padding: 8px 14px; font-family: Arial, sans-serif;
+  font-size: 12px; cursor: pointer;
+}
+.sp-feedback { font-size: 11px; font-weight: 600; }
+/* ── New Project Modal ────────────────────────── */
+.np-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(41,17,82,0.55); z-index: 200;
+  align-items: center; justify-content: center;
+}
+.np-overlay.open { display: flex; }
+.np-modal {
+  background: white; border-radius: 10px; width: 620px;
+  max-height: 88vh; overflow-y: auto;
+  box-shadow: 0 8px 40px rgba(41,17,82,0.35);
+}
+.np-header {
+  background: var(--purple); color: white; padding: 15px 20px;
+  border-radius: 10px 10px 0 0; display: flex; align-items: center;
+  justify-content: space-between; position: sticky; top: 0; z-index: 1;
+}
+.np-header h3 { font-size: 15px; font-weight: 700; }
+.np-close {
+  background: rgba(255,255,255,0.15); border: none; color: white;
+  width: 28px; height: 28px; border-radius: 5px; font-size: 15px; cursor: pointer;
+}
+.np-body { padding: 16px 20px; }
+.np-footer {
+  padding: 12px 20px; border-top: 1px solid var(--haze);
+  display: flex; gap: 8px; justify-content: flex-end;
+  align-items: center; position: sticky; bottom: 0; background: white;
+}
+.np-grp { margin-bottom: 11px; }
+.np-grp label {
+  display: block; font-size: 10.5px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.5px; color: var(--steel); margin-bottom: 3px;
+}
+.np-input, .np-select {
+  width: 100%; border: 1px solid #d8d0ee; border-radius: 5px;
+  padding: 7px 9px; font-family: Arial, sans-serif; font-size: 12.5px;
+  color: var(--purple); outline: none;
+}
+.np-input:focus, .np-select:focus { border-color: var(--glow); }
+.np-textarea {
+  width: 100%; border: 1px solid #d8d0ee; border-radius: 5px;
+  padding: 7px 9px; font-family: Arial, sans-serif; font-size: 12.5px;
+  color: var(--purple); outline: none; resize: vertical; min-height: 75px;
+}
+.np-textarea:focus { border-color: var(--glow); }
+.np-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.btn-new-proj {
+  font-size: 11px; font-family: Arial, sans-serif; font-weight: 700;
+  background: var(--glow); color: white; border: none; border-radius: 5px;
+  padding: 4px 10px; cursor: pointer; white-space: nowrap;
+}
+.btn-new-proj:hover { background: #5500cc; }
+</style>
+</head>
+<body>
+
+<!-- ── Header ─────────────────────────────── -->
+<div class="header">
+  <div class="header-chevron"></div>
+  <div class="header-chevron-2"></div>
+  <div class="header-main">
+    <div>
+      <h1>Project Requests</h1>
+      <div class="header-sub" id="last-updated">Loading live data…</div>
+    </div>
+    <div class="header-tag">Fremantle Dockers Football Club</div>
+  </div>
+</div>
+
+<!-- ── Loading ────────────────────────────── -->
+<div id="loading">
+  <div class="spinner"></div>
+  <p style="color:var(--steel);font-size:13px">Fetching live data from SharePoint…</p>
+</div>
+
+<!-- ── App ───────────────────────────────── -->
+<div id="app" style="display:none">
+
+  <!-- Active Requests Banner -->
+  <div class="active-banner">
+    <div class="active-banner-top">
+      <h2>Active Project Requests</h2>
+      <span class="active-count" id="active-count">0</span>
+    </div>
+    <div class="active-chips" id="active-chips"></div>
+  </div>
+
+  <!-- Main Layout -->
+  <div class="main-layout">
+
+    <!-- Left Panel -->
+    <div class="left-panel">
+
+      <div class="card">
+        <h3>Owner &amp; Status</h3>
+        <div class="chart-legend" id="legend-status"></div>
+        <canvas id="ownerChart" height="220"></canvas>
+      </div>
+
+      <div class="card">
+        <h3>Priority &amp; Status</h3>
+        <div style="height:5px"></div>
+        <canvas id="priorityChart" height="160"></canvas>
+      </div>
+
+      <div class="card">
+        <h3>Split by Category</h3>
+        <div style="height:4px"></div>
+        <canvas id="categoryChart" height="185"></canvas>
+      </div>
+
+      <!-- New Project tile -->
+      <div onclick="openNewProject(document.getElementById('f-cat').value)"
+           style="background:var(--purple);border-radius:8px;padding:14px 15px;box-shadow:0 1px 4px rgba(41,17,82,0.2);cursor:pointer;display:flex;align-items:center;gap:12px;transition:opacity 0.12s;"
+           onmouseover="this.style.opacity='0.88'" onmouseout="this.style.opacity='1'">
+        <div style="width:34px;height:34px;background:var(--glow);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:22px;color:white;font-weight:300;flex-shrink:0">+</div>
+        <div>
+          <div style="font-size:13px;font-weight:700;color:white;letter-spacing:-0.2px">New Project Request</div>
+          <div style="font-size:10.5px;color:var(--steel);margin-top:2px">Add to the Projects List</div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Right Panel -->
+    <div class="right-panel">
+
+      <!-- Filters -->
+      <div class="filter-bar">
+        <input type="text" id="search" placeholder="Search projects…">
+        <select id="f-status"><option value="">All Status</option></select>
+        <select id="f-dept"><option value="">All Departments</option></select>
+        <select id="f-band"><option value="">All Priority</option></select>
+        <select id="f-owner"><option value="">All Owners</option></select>
+        <select id="f-cat"><option value="">All Categories</option></select>
+        <button class="clear-btn" id="clear-btn">Clear</button>
+        <span class="table-meta" id="table-meta"></span>
+      </div>
+
+      <!-- Table -->
+      <div class="table-wrap">
+        <table>
+          <thead><tr id="thead-row"></tr></thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+
+      <!-- Formula Box -->
+      <div class="formula-box">
+        <h3>Priority Score Formula</h3>
+        <p>
+          <strong>Priority Score</strong> = Value Score × Duration ÷ Effort<br>
+          <strong>Value Score</strong> = Impact + Business Value + Requestor Priority + Time Critical
+        </p>
+      </div>
+
+      <!-- Gantt -->
+      <div class="card">
+        <h3>Project Start and End Dates</h3>
+        <div class="gantt-legend">
+          <span><span class="dot" style="background:var(--glow)"></span>Active</span>
+          <span><span class="dot" style="background:repeating-linear-gradient(45deg,#C4003A,#C4003A 3px,#8B0020 3px,#8B0020 6px)"></span>Blocked</span>
+          <span><span class="dot" style="background:#B0B7BC"></span>Not Started</span>
+          <span><span class="dot" style="background:var(--purple)"></span>Complete</span>
+        </div>
+        <div class="gantt-scroll">
+          <div class="gantt-wrap" id="gantt-wrap"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ── New Project Modal ─────────────────── -->
+<div class="np-overlay" id="np-overlay" onclick="if(event.target===this)closeNewProject()">
+  <div class="np-modal">
+    <div class="np-header">
+      <h3>New Project</h3>
+      <button class="np-close" onclick="closeNewProject()">✕</button>
+    </div>
+    <form id="np-form">
+      <div class="np-body">
+        <div class="np-grp"><label>Project Title *</label><input class="np-input" name="np-title" required placeholder="e.g. Department | Project Name"></div>
+        <div class="np-grid2">
+          <div class="np-grp"><label>Status</label>
+            <select class="np-select" name="np-status">
+              <option>Not Started</option><option>Active</option><option>Blocked</option><option>Complete</option><option>Not Doing</option>
+            </select></div>
+          <div class="np-grp"><label>Priority Band</label>
+            <select class="np-select" name="np-band">
+              <option value="">— Select —</option><option>High</option><option>Medium-High</option><option>Medium</option><option>Low</option>
+            </select></div>
+          <div class="np-grp"><label>Category</label>
+            <select class="np-select" name="np-cat" id="np-cat">
+              <option value="">— Select —</option><option>Data &amp; AI</option><option>Aligned Services</option><option>Technical Services</option>
+            </select></div>
+          <div class="np-grp"><label>Owner / Assigned</label><input class="np-input" name="np-owner" placeholder="e.g. Jenny"></div>
+          <div class="np-grp"><label>Start Date</label><input class="np-input" type="date" name="np-start"></div>
+          <div class="np-grp"><label>Target End Date</label><input class="np-input" type="date" name="np-end"></div>
+        </div>
+        <div class="np-grp"><label>Latest Update</label><textarea class="np-textarea" name="np-update" rows="2"></textarea></div>
+        <div class="np-grp"><label>Business Problem</label><textarea class="np-textarea" name="np-biz" rows="3"></textarea></div>
+        <div class="np-grp"><label>Current State</label><textarea class="np-textarea" name="np-current" rows="2"></textarea></div>
+        <div class="np-grp"><label>Requirements</label><textarea class="np-textarea" name="np-req" rows="3"></textarea></div>
+        <div class="np-grp"><label>Solution Options</label><textarea class="np-textarea" name="np-solutions" rows="2"></textarea></div>
+        <div class="np-grp"><label>Recommended Solution</label><textarea class="np-textarea" name="np-recommended" rows="2"></textarea></div>
+        <div class="np-grp"><label>Additional Notes</label><textarea class="np-textarea" name="np-notes" rows="2"></textarea></div>
+      </div>
+      <div class="np-footer">
+        <span id="np-feedback" class="sp-feedback"></span>
+        <button type="button" class="btn-sp-cancel" onclick="closeNewProject()">Cancel</button>
+        <button type="submit" class="btn-sp-save" id="np-save-btn">Save to SharePoint</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ── Detail Panel ──────────────────────── -->
+<div class="overlay" id="overlay" onclick="closeDetail()"></div>
+<div class="detail-panel" id="detail-panel">
+  <div class="dp-header">
+    <div class="dp-chevron"></div>
+    <h2 id="dp-title">—</h2>
+    <button class="dp-close" onclick="closeDetail()">✕</button>
+    <div class="dp-badges" id="dp-badges"></div>
+  </div>
+  <div class="dp-body" id="dp-body"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.js" integrity="sha384-iU8HYtnGQ8Cy4zl7gbNMOhsDTTKX02BTXptVP/vqAWIaTfM7isw76iyZCsjL2eVi" crossorigin="anonymous"></script>
+<script>
+
+
+const STATUS_COLOR = {
+  'Active':      '#6A00FF',
+  'Blocked':     '#C4003A',
+  'Not Started': '#A5ACAF',
+  'Complete':    '#291152'
+};
+const STATUS_ORDER = ['Active','Blocked','Not Started','Complete'];
+
+let allProjects = [], charts = {};
+let sortKey = 'priority_score', sortDir = -1, selectedId = null;
+
+/* ── CSV Parser (RFC 4180) ──────────────────────── */
+/* ── Data injected by Power Automate ───────────── */
+const PROJECT_DATA = ##PROJECTS##;
+const LAST_UPDATED = "##TIMESTAMP##";
+
+function clean(v) {
+  if(!v) return '';
+  v = v.trim();
+  try {
+    if(v.startsWith('{')) {
+      const p = JSON.parse(v);
+      if(p.results && Array.isArray(p.results))
+        return p.results.map(r=>r.Value||r.value||r.Title||r.LookupValue||r.Name||r).filter(x=>x&&typeof x!=='object').join(', ');
+      return p.Value||p.value||p.Title||p.DisplayName||p.LookupValue||p.Name||'';
+    }
+    if(v.startsWith('[')) {
+      const p = JSON.parse(v);
+      return p.map(x=>x.Value||x.value||x.Title||x.LookupValue||x.Name||x).filter(x=>x&&typeof x!=='object').join(', ');
+    }
+  } catch(_){}
+  // Regex fallback for malformed JSON — check capital and lowercase Value
+  const vm = v.match(/"Value"\s*:\s*"([^"]+)"/); if(vm) return vm[1];
+  const vml = v.match(/"value"\s*:\s*"([^"]+)"/i); if(vml) return vml[1];
+  const tm = v.match(/"Title"\s*:\s*"([^"]+)"/i); if(tm) return tm[1];
+  if(v.startsWith('i:0#')||v.startsWith('i:0!')) return '';
+  return v;
+}
+
+function fmtDate(d) {
+  if(!d) return '—';
+  const dt = new Date(d);
+  if(isNaN(dt)) return d;
+  return dt.toLocaleDateString('en-AU',{day:'numeric',month:'long',year:'numeric'});
+}
+
+
+/* ── Active Requests Banner ─────────────────────── */
+function buildActiveBanner(projects) {
+  const active = projects.filter(p=>p.status==='Active');
+  document.getElementById('active-count').textContent = active.length;
+  document.getElementById('active-chips').innerHTML = active.map(p=>`
+    <div class="active-chip" onclick="showDetail('${p.id}')">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:2px">
+        <div class="active-chip-name" title="${p.title}">${p.title}</div>
+        ${p.band?`<span class="badge" style="background:#ede5ff;color:var(--purple);border:1px solid #d4b8ff;flex-shrink:0;font-size:9.5px">${p.band}</span>`:''}
+      </div>
+      <div class="active-chip-owner">${p.owner||'—'}</div>
+      <div class="active-chip-update">${p.update||'No update recorded'}</div>
+    </div>`
+  ).join('');
+}
+
+/* ── Charts ─────────────────────────────────────── */
+function buildCharts(projects) {
+  document.getElementById('legend-status').innerHTML = STATUS_ORDER.map(s=>
+    `<span><span class="dot" style="background:${STATUS_COLOR[s]}"></span>${s}</span>`
+  ).join('');
+
+  const owners = [...new Set(projects.map(p=>p.owner).filter(Boolean))].sort();
+  const ownerDS = STATUS_ORDER.map(status=>({
+    label:status,
+    data:owners.map(o=>projects.filter(p=>p.owner===o&&p.status===status).length),
+    backgroundColor:STATUS_COLOR[status],
+    borderRadius:3, borderSkipped:false
+  }));
+  if(charts.owner) charts.owner.destroy();
+  charts.owner = new Chart(document.getElementById('ownerChart'),{
+    type:'bar', data:{labels:owners,datasets:ownerDS},
+    options:{indexAxis:'y',responsive:true,
+      plugins:{legend:{display:false},tooltip:{callbacks:{title:i=>i[0].label,label:i=>`${i.dataset.label}: ${i.raw}`}}},
+      scales:{
+        x:{stacked:true,grid:{color:'#ECEEEE'},ticks:{font:{size:10,family:'Arial'}}},
+        y:{stacked:true,grid:{display:false},ticks:{font:{size:11,family:'Arial'}}}
+      },
+      onClick:(e,els,chart)=>{
+        const rect=chart.canvas.getBoundingClientRect();
+        const x=e.clientX-rect.left, y=e.clientY-rect.top;
+        if(x<chart.chartArea.left){
+          // Clicked on Y-axis label — filter by owner only
+          const yScale=chart.scales.y;
+          let best=-1,minD=Infinity;
+          chart.data.labels.forEach((lbl,i)=>{const d=Math.abs(y-yScale.getPixelForTick(i));if(d<minD){minD=d;best=i;}});
+          if(best>=0&&minD<15){document.getElementById('f-owner').value=chart.data.labels[best];document.getElementById('f-status').value='';onFilter();}
+          return;
+        }
+        if(!els.length){document.getElementById('f-owner').value='';document.getElementById('f-status').value='';onFilter();return;}
+        document.getElementById('f-owner').value=chart.data.labels[els[0].index];
+        document.getElementById('f-status').value=chart.data.datasets[els[0].datasetIndex].label;
+        onFilter();
+      },
+      onHover:(e,els,chart)=>{const rect=chart.canvas.getBoundingClientRect();const x=e.clientX-rect.left;chart.canvas.style.cursor=(x<chart.chartArea.left||els.length)?'pointer':'default';}
+    }
+  });
+
+  const bands = ['High','Medium-High','Medium','Low'];
+  const bandDS = STATUS_ORDER.map(status=>({
+    label:status,
+    data:bands.map(b=>projects.filter(p=>p.band===b&&p.status===status).length),
+    backgroundColor:STATUS_COLOR[status],
+    borderRadius:3, borderSkipped:false
+  }));
+  if(charts.priority) charts.priority.destroy();
+  charts.priority = new Chart(document.getElementById('priorityChart'),{
+    type:'bar', data:{labels:bands,datasets:bandDS},
+    options:{indexAxis:'y',responsive:true,
+      plugins:{legend:{display:false},tooltip:{callbacks:{title:i=>i[0].label,label:i=>`${i.dataset.label}: ${i.raw}`}}},
+      scales:{
+        x:{stacked:true,grid:{color:'#ECEEEE'},ticks:{font:{size:10,family:'Arial'}}},
+        y:{stacked:true,grid:{display:false},ticks:{font:{size:11,family:'Arial'}}}
+      },
+      onClick:(e,els,chart)=>{
+        const rect=chart.canvas.getBoundingClientRect();
+        const x=e.clientX-rect.left, y=e.clientY-rect.top;
+        if(x<chart.chartArea.left){
+          // Clicked on Y-axis label — filter by priority band only
+          const yScale=chart.scales.y;
+          let best=-1,minD=Infinity;
+          chart.data.labels.forEach((lbl,i)=>{const d=Math.abs(y-yScale.getPixelForTick(i));if(d<minD){minD=d;best=i;}});
+          if(best>=0&&minD<15){document.getElementById('f-band').value=chart.data.labels[best];document.getElementById('f-status').value='';onFilter();}
+          return;
+        }
+        if(!els.length){document.getElementById('f-band').value='';document.getElementById('f-status').value='';onFilter();return;}
+        document.getElementById('f-band').value=chart.data.labels[els[0].index];
+        document.getElementById('f-status').value=chart.data.datasets[els[0].datasetIndex].label;
+        onFilter();
+      },
+      onHover:(e,els,chart)=>{const rect=chart.canvas.getBoundingClientRect();const x=e.clientX-rect.left;chart.canvas.style.cursor=(x<chart.chartArea.left||els.length)?'pointer':'default';}
+    }
+  });
+
+  const cats=['Data & AI','Aligned Services','Technical Services'];
+  if(charts.category) charts.category.destroy();
+  charts.category = new Chart(document.getElementById('categoryChart'),{
+    type:'doughnut',
+    data:{labels:cats,datasets:[{data:cats.map(c=>projects.filter(p=>p.category===c).length),
+      backgroundColor:['#291152','#6A00FF','#A5ACAF'],borderWidth:2,borderColor:'#fff',hoverOffset:6}]},
+    options:{cutout:'55%',
+      plugins:{legend:{position:'bottom',labels:{font:{size:10,family:'Arial'},padding:8,boxWidth:12}}},
+      onClick:(e,els,chart)=>{
+        if(!els.length){document.getElementById('f-cat').value='';onFilter();return;}
+        const cat=chart.data.labels[els[0].index];
+        document.getElementById('f-cat').value=cat;
+        onFilter();
+      }
+    }
+  });
+}
+
+/* ── Table ─────────────────────────────────────── */
+const TABLE_COLS=[
+  {key:'title',    label:'Project Name'},
+  {key:'status',   label:'Status'},
+  {key:'band',     label:'Priority Band'},
+  {key:'owner',    label:'Owner'},
+  {key:'priority_score', label:'Priority Score'},
+  {key:'category', label:'Category'},
+  {key:'team',     label:'Team'},
+  {key:'end',      label:'Target End Date'},
+];
+
+function badgeClass(s){return({'Active':'b-Active','Blocked':'b-Blocked','Complete':'b-Complete','Not Started':'b-NotStarted'}[s]||'b-NotStarted');}
+function bandClass(b){return({'High':'pb-High','Medium-High':'pb-MediumHigh','Medium':'pb-Medium','Low':'pb-Low'}[b]||'');}
+
+function renderTable(projects){
+  document.getElementById('table-meta').textContent=`${projects.length} of ${allProjects.length} projects`;
+  const thead=document.getElementById('thead-row');
+  const arr=k=>k===sortKey?(sortDir===1?'↑':'↓'):'<span class="sort-arr">↕</span>';
+  thead.innerHTML=TABLE_COLS.map(c=>`<th class="${sortKey===c.key?'sorted':''}" data-key="${c.key}">${c.label} ${arr(c.key)}</th>`).join('');
+  thead.querySelectorAll('th').forEach(th=>th.addEventListener('click',()=>{
+    if(sortKey===th.dataset.key)sortDir*=-1;else{sortKey=th.dataset.key;sortDir=1;}
+    renderTable(getFiltered());
+  }));
+  const sorted=[...projects].sort((a,b)=>{
+    const av=a[sortKey]??'',bv=b[sortKey]??'';
+    if(typeof av==='number'&&typeof bv==='number')return sortDir*(av-bv);
+    return sortDir*String(av).localeCompare(String(bv),undefined,{numeric:true});
+  });
+  const tbody=document.getElementById('tbody');
+  if(!sorted.length){tbody.innerHTML=`<tr><td colspan="${TABLE_COLS.length}" class="no-res">No projects match the current filters.</td></tr>`;return;}
+  tbody.innerHTML=sorted.map(p=>`
+    <tr class="drow${selectedId===p.id?' sel':''}" data-id="${p.id}">
+      <td style="font-weight:600;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--purple)">${p.title||'—'}</td>
+      <td><span class="badge ${badgeClass(p.status)}">${p.status||'—'}</span></td>
+      <td><span class="${bandClass(p.band)}">${p.band||'—'}</span></td>
+      <td style="font-size:11px;color:var(--purple);font-weight:600">${p.owner||'—'}</td>
+      <td><span class="score-pill">${p.priority_score?p.priority_score.toFixed(2):'—'}</span></td>
+      <td style="font-size:11px;color:#555">${p.category||'—'}</td>
+      <td style="font-size:11px;color:#555">${p.team||'—'}</td>
+      <td style="font-size:11px;color:var(--steel);white-space:nowrap">${fmtDate(p.end)}</td>
+    </tr>`).join('');
+  tbody.querySelectorAll('tr.drow').forEach(row=>row.addEventListener('click',()=>showDetail(row.dataset.id)));
+}
+
+/* ── Gantt ─────────────────────────────────────── */
+function buildGantt(projects){
+  // Fixed date range: Nov 2025 – Oct 2026 (FY 2025/26)
+  const minMs=+new Date('2025-11-01');
+  const maxMs=+new Date('2026-10-31');
+  const totalMs=maxMs-minMs;
+
+  // Include all projects with an end date visible in this window
+  const withDates=projects.filter(p=>p.end&&new Date(p.end).getFullYear()>2000&&+new Date(p.end)>=minMs);
+  if(!withDates.length){document.getElementById('gantt-wrap').innerHTML='<p style="color:var(--steel);font-size:12px;padding:10px">No projects with due dates in this period.</p>';return;}
+
+  const months=[];
+  const md=new Date(2025,10,1); // Nov 2025
+  while(+md<=maxMs){months.push(new Date(md));md.setMonth(md.getMonth()+1);}
+
+  // Group by due-date month (end date)
+  const groups={};
+  withDates.forEach(p=>{
+    const e=new Date(p.end);
+    const key=`${e.getFullYear()}-${String(e.getMonth()+1).padStart(2,'0')}`;
+    const label=e.toLocaleDateString('en-AU',{month:'long',year:'numeric'});
+    if(!groups[key])groups[key]={label,projects:[]};
+    groups[key].projects.push(p);
+  });
+
+  const gridLines=months.map(m=>{
+    const p=((+m-minMs)/totalMs*100).toFixed(2);
+    return `<div class="gantt-grid-line" style="left:${p}%"></div>`;
+  }).join('');
+
+  // FY quarter: Nov-Jan=Q1, Feb-Apr=Q2, May-Jul=Q3, Aug-Oct=Q4
+  const fyQ=m=>[1,2,2,2,3,3,3,4,4,4,1,1][m.getMonth()];
+  const yearGrps=[],qtrGrps=[];
+  months.forEach(m=>{
+    const yr=m.getFullYear(),q=fyQ(m);
+    if(!yearGrps.length||yearGrps[yearGrps.length-1].yr!==yr) yearGrps.push({yr,count:1});
+    else yearGrps[yearGrps.length-1].count++;
+    if(!qtrGrps.length||qtrGrps[qtrGrps.length-1].q!==q) qtrGrps.push({q,count:1});
+    else qtrGrps[qtrGrps.length-1].count++;
+  });
+  const total=months.length;
+  const pctW=n=>(n/total*100).toFixed(2)+'%';
+
+  const axisHtml=`
+    <div class="gantt-header-row year-row">
+      ${yearGrps.map(g=>`<div class="gantt-year-lbl" style="width:${pctW(g.count)}">${g.yr}</div>`).join('')}
+    </div>
+    <div class="gantt-header-row qtr-row">
+      ${qtrGrps.map(g=>`<div class="gantt-qtr-lbl" style="width:${pctW(g.count)}">Q${g.q}</div>`).join('')}
+    </div>
+    <div class="gantt-header-row month-row">
+      ${months.map(m=>`<div class="gantt-month-lbl">${m.toLocaleDateString('en-AU',{month:'short'}).toUpperCase()}</div>`).join('')}
+    </div>`;
+
+  const groupsHtml=Object.keys(groups).sort().map((key,gi)=>{
+    const grp=groups[key];
+    const gid=`gg${gi}`;
+    const rowsHtml=grp.projects.map(p=>{
+      const hasStart = p.start && new Date(p.start).getFullYear()>2000;
+      // Not Started: only show bar if actual start date exists
+      // Other statuses: use chart start as fallback if no start date
+      const rawStart = hasStart ? +new Date(p.start) : (p.status==='Not Started' ? null : minMs);
+      if(rawStart===null) return ''; // Not Started with no start date — skip bar
+      const clampedStart = Math.max(rawStart, minMs);
+      const clampedEnd   = Math.min(+new Date(p.end), maxMs);
+      if(clampedEnd <= clampedStart) return '';
+      const leftPct  = ((clampedStart-minMs)/totalMs*100).toFixed(2);
+      const widthPct = Math.max(0.5,((clampedEnd-clampedStart)/totalMs*100)).toFixed(2);
+      const cls='g-'+p.status.replace(/\s+/g,'').replace(/[^a-zA-Z]/g,'');
+      return `<div class="gantt-row" onclick="showDetail('${p.id}')" style="cursor:pointer">
+        <div class="gantt-lbl" title="${p.title}">${p.title}</div>
+        <div class="gantt-track">
+          ${gridLines}
+          <div class="gantt-bar ${cls}" style="left:${leftPct}%;width:${widthPct}%"
+               title="${p.title} | ${fmtDate(p.start)} – ${fmtDate(p.end)} | ${p.status}"></div>
+        </div>
+      </div>`;
+    }).filter(Boolean).join('');
+    return `<div class="gantt-group">
+      <div class="gantt-group-hdr" onclick="toggleGrp('${gid}',this)">
+        <span class="gang-toggle">▼</span> Due ${grp.label}
+        <span style="font-weight:400;color:var(--steel);margin-left:4px">(${grp.projects.length})</span>
+      </div>
+      <div id="${gid}">${rowsHtml}</div>
+    </div>`;
+  }).join('');
+  document.getElementById('gantt-wrap').innerHTML=axisHtml+groupsHtml;
+
+  // Today line — only if today falls within the chart window
+  const todayMs = +new Date();
+  if(todayMs >= minMs && todayMs <= maxMs) {
+    const frac = ((todayMs - minMs) / totalMs).toFixed(4);
+    const line = document.createElement('div');
+    line.className = 'gantt-today';
+    // Position accounts for the 160px label column
+    line.style.left = `calc(160px + (100% - 160px) * ${frac})`;
+    line.innerHTML = `<div class="gantt-today-label">Today</div>`;
+    document.getElementById('gantt-wrap').appendChild(line);
+  }
+}
+
+function toggleGrp(id,hdr){
+  const el=document.getElementById(id);
+  const tog=hdr.querySelector('.gang-toggle');
+  const hidden=el.style.display==='none';
+  el.style.display=hidden?'':'none';
+  tog.textContent=hidden?'▼':'▶';
+}
+
+/* ── Detail Panel ─────────────────────────────────── */
+function showDetail(id){
+  const p=allProjects.find(x=>x.id===String(id));
+  if(!p)return;
+  selectedId=p.id;
+  document.getElementById('dp-title').textContent=p.title||'—';
+  document.getElementById('dp-badges').innerHTML=
+    `<span class="badge ${badgeClass(p.status)}">${p.status}</span>`+
+    (p.band?`<span class="badge" style="background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.3)">${p.band}</span>`:'')+
+    (p.priority_score?`<span class="badge" style="background:var(--glow);color:#fff">${p.priority_score.toFixed(2)}</span>`:'');
+  document.getElementById('dp-body').innerHTML=`
+    <div class="dp-section">
+      <h4>Project Details</h4>
+      <div class="dp-grid">
+        <div class="dp-field"><label>Department</label><span>${p.dept||'—'}</span></div>
+        <div class="dp-field"><label>Team</label><span>${p.team||'—'}</span></div>
+        <div class="dp-field"><label>Owner</label><span>${p.owner||'—'}</span></div>
+        <div class="dp-field"><label>Project Manager</label><span>${p.pm||'—'}</span></div>
+        <div class="dp-field"><label>Start Date</label><span>${fmtDate(p.start)}</span></div>
+        <div class="dp-field"><label>Target End Date</label><span>${fmtDate(p.end)}</span></div>
+        <div class="dp-field"><label>Category</label><span>${p.category||'—'}</span></div>
+        <div class="dp-field"><label>Battleground</label><span>${p.battleground||'—'}</span></div>
+      </div>
+    </div>
+    <div class="dp-section">
+      <h4>Scoring</h4>
+      <div class="dp-grid">
+        <div class="dp-field"><label>Priority Score</label><span>${p.priority_score?p.priority_score.toFixed(2):'—'}</span></div>
+        <div class="dp-field"><label>Priority Band</label><span class="${bandClass(p.band)}">${p.band||'—'}</span></div>
+        <div class="dp-field"><label>Status</label><span>${p.status||'—'}</span></div>
+      </div>
+    </div>
+    ${p.update?`<div class="dp-section"><h4>Latest Update</h4><div class="dp-text">${p.update}</div></div>`:''}
+    ${p.biz?`<div class="dp-section"><h4>Business Problem</h4><div class="dp-text">${p.biz}</div></div>`:''}
+    ${p.current?`<div class="dp-section"><h4>Current State</h4><div class="dp-text">${p.current}</div></div>`:''}
+    ${p.requirements?`<div class="dp-section"><h4>Requirements</h4><div class="dp-text">${p.requirements}</div></div>`:''}
+    ${p.solutions?`<div class="dp-section"><h4>Solution Options</h4><div class="dp-text">${p.solutions}</div></div>`:''}
+    ${p.recommended?`<div class="dp-section"><h4>Recommended Solution</h4><div class="dp-text">${p.recommended}</div></div>`:''}
+    ${p.notes?`<div class="dp-section"><h4>Additional Notes</h4><div class="dp-text">${p.notes}</div></div>`:''}
+  `;
+  // Add / refresh Edit button
+  let editBtn = document.getElementById('dp-edit-btn');
+  if(!editBtn){ editBtn=document.createElement('button'); editBtn.id='dp-edit-btn'; editBtn.className='btn-edit-dp'; editBtn.textContent='✏ Edit'; document.querySelector('.dp-header').appendChild(editBtn); }
+  editBtn.onclick = editDetail;
+
+  document.getElementById('detail-panel').classList.add('open');
+  document.getElementById('overlay').classList.add('open');
+  document.querySelectorAll('tr.drow').forEach(r=>r.classList.toggle('sel',r.dataset.id===p.id));
+}
+
+function closeDetail(){
+  document.getElementById('detail-panel').classList.remove('open');
+  document.getElementById('overlay').classList.remove('open');
+  selectedId=null;
+  document.querySelectorAll('tr.drow').forEach(r=>r.classList.remove('sel'));
+}
+
+/* ── Filters ─────────────────────────────────────── */
+function populateFilters(projects){
+  const uniq=key=>[...new Set(projects.map(p=>p[key]).filter(Boolean))].sort();
+  const fill=(id,vals)=>{const sel=document.getElementById(id);const first=sel.options[0].outerHTML;sel.innerHTML=first+vals.map(v=>`<option value="${v}">${v}</option>`).join('');};
+  fill('f-status',['Active','Blocked','Not Started','Complete']);
+  fill('f-dept',['All Club','ALFM','AFLW','Commercial','Comms','Community','Data & Tech','Finance','Legal and Risk','Marketing','Media','Membership','P&C','Premium Sales','Retail','SIA','Wellbeing']);
+  fill('f-band',['High','Medium-High','Medium','Low']);
+  fill('f-owner',uniq('owner'));
+  fill('f-cat',['Data & AI','Aligned Services','Technical Services']);
+}
+
+function getFiltered(){
+  const search=document.getElementById('search').value.toLowerCase();
+  const status=document.getElementById('f-status').value;
+  const dept=document.getElementById('f-dept').value;
+  const band=document.getElementById('f-band').value;
+  const owner=document.getElementById('f-owner').value;
+  const cat=document.getElementById('f-cat').value;
+  return allProjects.filter(p=>{
+    if(search&&!p.title.toLowerCase().includes(search)&&!p.dept.toLowerCase().includes(search)&&!p.pm.toLowerCase().includes(search))return false;
+    if(status&&p.status!==status)return false;
+    if(dept&&!p.dept.includes(dept))return false;
+    if(band&&p.band!==band)return false;
+    if(owner&&p.owner!==owner)return false;
+    if(cat&&p.category!==cat)return false;
+    return true;
+  });
+}
+
+function onFilter(){const f=getFiltered();renderTable(f);buildGantt(f);}
+document.getElementById('clear-btn').addEventListener('click',()=>{
+  ['f-status','f-dept','f-band','f-owner','f-cat'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('search').value='';
+  onFilter();
+});
+['f-status','f-dept','f-band','f-owner','f-cat'].forEach(id=>document.getElementById(id).addEventListener('change',onFilter));
+document.getElementById('search').addEventListener('input',onFilter);
+
+/* ── SharePoint REST API ─────────────────────────── */
+const SP_SITE = 'https://fremantlefc.sharepoint.com/sites/ProjectPortfolio';
+const SP_LIST = 'Projects List';
+
+async function getDigest() {
+  try {
+    const r = await fetch(`${SP_SITE}/_api/contextinfo`, {
+      method:'POST', headers:{'Accept':'application/json;odata=verbose'}, credentials:'include'
+    });
+    if(!r.ok) throw new Error('auth');
+    return (await r.json()).d.GetContextWebInformation.FormDigestValue;
+  } catch {
+    throw new Error('Cannot connect to SharePoint. Make sure this file is opened from SharePoint, not downloaded locally.');
+  }
+}
+
+async function spUpdate(id, fields) {
+  const digest = await getDigest();
+  const r = await fetch(`${SP_SITE}/_api/web/lists/getbytitle('${SP_LIST}')/items(${id})`, {
+    method:'POST', credentials:'include',
+    headers:{
+      'Accept':'application/json;odata=verbose',
+      'Content-Type':'application/json;odata=verbose',
+      'X-RequestDigest':digest, 'IF-MATCH':'*', 'X-HTTP-Method':'MERGE'
+    },
+    body:JSON.stringify({'__metadata':{'type':'SP.Data.Projects_x0020_ListListItem'}, ...fields})
+  });
+  if(!r.ok && r.status!==204) throw new Error(`Save failed (${r.status})`);
+}
+
+async function spCreate(fields) {
+  const digest = await getDigest();
+  const r = await fetch(`${SP_SITE}/_api/web/lists/getbytitle('${SP_LIST}')/items`, {
+    method:'POST', credentials:'include',
+    headers:{
+      'Accept':'application/json;odata=verbose',
+      'Content-Type':'application/json;odata=verbose',
+      'X-RequestDigest':digest
+    },
+    body:JSON.stringify({'__metadata':{'type':'SP.Data.Projects_x0020_ListListItem'}, ...fields})
+  });
+  if(!r.ok) throw new Error(`Create failed (${r.status})`);
+  return (await r.json()).d;
+}
+
+/* ── Edit Detail Panel ───────────────────────────── */
+function editDetail() {
+  const p = allProjects.find(x => x.id === selectedId);
+  if(!p) return;
+  const sOpts = ['Active','Blocked','Not Started','Complete','Not Doing']
+    .map(s=>`<option${p.status===s?' selected':''}>${s}</option>`).join('');
+  const bOpts = ['High','Medium-High','Medium','Low']
+    .map(b=>`<option${p.band===b?' selected':''}>${b}</option>`).join('');
+  const cOpts = ['Data &amp; AI','Aligned Services','Technical Services']
+    .map(c=>`<option${p.category===c.replace('&amp;','&')?' selected':''}>${c}</option>`).join('');
+
+  document.getElementById('dp-body').innerHTML = `<form id="edit-form">
+    <div class="dp-section">
+      <h4>Project Details</h4>
+      <div class="np-grp"><label>Title</label><input class="dp-form-input" name="Title" value="${(p.title||'').replace(/"/g,'&quot;')}" required></div>
+      <div class="np-grid2">
+        <div class="np-grp"><label>Status</label><select class="dp-form-select" name="Status">${sOpts}</select></div>
+        <div class="np-grp"><label>Priority Band</label><select class="dp-form-select" name="Priority_x0020_Band">${bOpts}</select></div>
+        <div class="np-grp"><label>Owner</label><input class="dp-form-input" name="owner_txt" value="${p.owner||''}"></div>
+        <div class="np-grp"><label>Category</label><select class="dp-form-select" name="cat_txt">${cOpts}</select></div>
+        <div class="np-grp"><label>Start Date</label><input class="dp-form-input" type="date" name="StartDate" value="${p.start?p.start.substring(0,10):''}"></div>
+        <div class="np-grp"><label>Target End Date</label><input class="dp-form-input" type="date" name="EndDate" value="${p.end?p.end.substring(0,10):''}"></div>
+      </div>
+    </div>
+    <div class="dp-section"><h4>Latest Update</h4><textarea class="dp-form-textarea" name="LatestUpdate" rows="3">${p.update||''}</textarea></div>
+    <div class="dp-section"><h4>Business Problem</h4><textarea class="dp-form-textarea" name="BusinessProblem" rows="3">${p.biz||''}</textarea></div>
+    <div class="dp-section"><h4>Current State</h4><textarea class="dp-form-textarea" name="CurrentState" rows="2">${p.current||''}</textarea></div>
+    <div class="dp-section"><h4>Requirements</h4><textarea class="dp-form-textarea" name="Requirements" rows="3">${p.requirements||''}</textarea></div>
+    <div class="dp-section"><h4>Solution Options</h4><textarea class="dp-form-textarea" name="SolutionOptions" rows="2">${p.solutions||''}</textarea></div>
+    <div class="dp-section"><h4>Recommended Solution</h4><textarea class="dp-form-textarea" name="RecommendedSolution" rows="2">${p.recommended||''}</textarea></div>
+    <div class="dp-section"><h4>Additional Notes</h4><textarea class="dp-form-textarea" name="AdditionalNotes" rows="2">${p.notes||''}</textarea></div>
+    <div style="display:flex;gap:8px;padding:10px 0;align-items:center;flex-wrap:wrap">
+      <button type="submit" class="btn-sp-save" id="edit-save-btn">Save to SharePoint</button>
+      <button type="button" class="btn-sp-cancel" onclick="showDetail('${p.id}')">Cancel</button>
+      <span id="edit-fb" class="sp-feedback"></span>
+    </div>
+  </form>`;
+
+  document.getElementById('edit-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    const fd = new FormData(e.target);
+    const fields = {
+      Title: fd.get('Title'),
+      Status: fd.get('Status'),
+      Priority_x0020_Band: fd.get('Priority_x0020_Band'),
+      LatestUpdate: fd.get('LatestUpdate'),
+      StartDate: fd.get('StartDate')||null,
+      EndDate: fd.get('EndDate')||null,
+      BusinessProblem: fd.get('BusinessProblem'),
+      CurrentState: fd.get('CurrentState'),
+      Requirements: fd.get('Requirements'),
+      SolutionOptions: fd.get('SolutionOptions'),
+      RecommendedSolution: fd.get('RecommendedSolution'),
+      AdditionalNotes: fd.get('AdditionalNotes'),
+    };
+    const btn=document.getElementById('edit-save-btn');
+    btn.textContent='Saving…'; btn.disabled=true;
+    try {
+      await spUpdate(p.id, fields);
+      const idx=allProjects.findIndex(x=>x.id===p.id);
+      if(idx>=0) Object.assign(allProjects[idx], {
+        title:fields.Title, status:fields.Status, band:fields.Priority_x0020_Band,
+        update:fields.LatestUpdate, start:fields.StartDate||'', end:fields.EndDate||'',
+        biz:fields.BusinessProblem, current:fields.CurrentState,
+        requirements:fields.Requirements, solutions:fields.SolutionOptions,
+        recommended:fields.RecommendedSolution, notes:fields.AdditionalNotes,
+        owner:fd.get('owner_txt'), category:fd.get('cat_txt').replace('&amp;','&')
+      });
+      onFilter(); buildCharts(getFiltered()); buildActiveBanner(allProjects);
+      showDetail(p.id);
+    } catch(err) {
+      btn.textContent='Save to SharePoint'; btn.disabled=false;
+      const fb=document.getElementById('edit-fb');
+      fb.style.color='#C4003A'; fb.textContent=err.message;
+    }
+  });
+}
+
+/* ── New Project ─────────────────────────────────── */
+function openNewProject(cat) {
+  if(cat) document.getElementById('np-cat').value = cat;
+  document.getElementById('np-overlay').classList.add('open');
+  document.getElementById('np-feedback').textContent='';
+}
+
+function closeNewProject() {
+  document.getElementById('np-overlay').classList.remove('open');
+  document.getElementById('np-form').reset();
+}
+
+document.getElementById('np-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const fd = new FormData(e.target);
+  const catVal = fd.get('np-cat').replace('&amp;','&');
+  const fields = {
+    Title: fd.get('np-title'),
+    Status: fd.get('np-status'),
+    Priority_x0020_Band: fd.get('np-band')||null,
+    LatestUpdate: fd.get('np-update')||null,
+    StartDate: fd.get('np-start')||null,
+    EndDate: fd.get('np-end')||null,
+    BusinessProblem: fd.get('np-biz')||null,
+    CurrentState: fd.get('np-current')||null,
+    Requirements: fd.get('np-req')||null,
+    SolutionOptions: fd.get('np-solutions')||null,
+    RecommendedSolution: fd.get('np-recommended')||null,
+    AdditionalNotes: fd.get('np-notes')||null,
+  };
+  const btn=document.getElementById('np-save-btn');
+  const fb=document.getElementById('np-feedback');
+  btn.textContent='Saving…'; btn.disabled=true; fb.textContent='';
+  try {
+    const created = await spCreate(fields);
+    allProjects.push({
+      id:String(created.ID), title:fields.Title||'', status:fields.Status||'',
+      dept:'', owner:fd.get('np-owner')||'', pm:'',
+      start:fields.StartDate||'', end:fields.EndDate||'',
+      band:fields.Priority_x0020_Band||'', priority_score:0,
+      category:catVal, team:'', update:fields.LatestUpdate||'',
+      battleground:'', biz:fields.BusinessProblem||'', current:fields.CurrentState||'',
+      requirements:fields.Requirements||'', solutions:fields.SolutionOptions||'',
+      recommended:fields.RecommendedSolution||'', notes:fields.AdditionalNotes||''
+    });
+    onFilter(); buildCharts(getFiltered()); buildActiveBanner(allProjects);
+    closeNewProject();
+  } catch(err) {
+    btn.textContent='Save to SharePoint'; btn.disabled=false;
+    fb.style.color='#C4003A'; fb.textContent=err.message;
+  }
+});
+
+/* ── Initialise from embedded data ──────────────── */
+function initDashboard() {
+  allProjects = PROJECT_DATA
+    .filter(p => (p.Status || p.status) !== 'Not Doing')
+    .map(p => ({
+      id:             String(p.ID   || p.id   || ''),
+      title:          String(p.Name || p.title || ''),
+      status:         String(p.Status || p.status || ''),
+      dept:           clean(String(p.Department || p.dept || '')),
+      owner:          String(p.Assigned || p.owner || ''),
+      pm:             String(p['Project Manager'] || p.pm || ''),
+      start:          String(p['Start Date'] || p.start || ''),
+      end:            String(p['End Date']   || p.end   || ''),
+      band:           String(p.Priority || p.band || ''),
+      priority_score: Math.round(parseFloat(p['Priority Score'] || p.priority_score || 0) * 100) / 100,
+      category:       String(p.Catergory || p.Category || p.category || ''),
+      team:           clean(String(p['Assigned Team'] || p.team || '')),
+      update:         String(p['Lastest Update'] || p['Latest Update'] || p.update || ''),
+      battleground:   String(p.Battleground || p.battleground || ''),
+      biz:            String(p['Business Problem'] || p.biz || ''),
+      current:        String(p['Current State'] || p.current || ''),
+      requirements:   String(p.Requirements || p.requirements || ''),
+      solutions:      String(p['Solution Options'] || p.solutions || ''),
+      recommended:    String(p['Recommended Solution'] || p.recommended || ''),
+      notes:          String(p['Additional Notes'] || p.notes || '')
+    }));
+
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('app').style.display = '';
+  document.getElementById('last-updated').textContent =
+    `Live · last updated ${LAST_UPDATED} · ${allProjects.length} projects`;
+
+  buildActiveBanner(allProjects);
+  buildCharts(allProjects);
+  populateFilters(allProjects);
+  renderTable(allProjects);
+  buildGantt(allProjects);
+}
+
+initDashboard();
+</script>
+</body>
+</html>
